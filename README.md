@@ -7,3 +7,8 @@ __Upcoming features :__
 - Channels
 - Customization
 and more !
+
+__Endpoints :__
+- / -> Chat
+- /login -> Chat access
+- /register -> Account creation
