@@ -1,0 +1,20 @@
+{
+  "name": "chat-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "Mokona59",
+  "license": "ISC",
+  "description": "Minimal chat application",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^17.0.0",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mongodb": "^6.17.0",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "socket.io": "^4.8.1"
+  }
+}
