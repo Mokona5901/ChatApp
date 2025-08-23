@@ -1,131 +1,3 @@
-/*const socket = io();
-
-const form = document.getElementById('form');
-const input = document.getElementById('input');
-const messages = document.getElementById('messages');
-
-let username = localStorage.getItem('username');
-if (!username) {
-  alert('You must be logged in.');
-  window.location.href = '/login';
-}
-
-let loadedMessagesCount = 0;
-const MESSAGES_BATCH_SIZE = 50;
-let isLoadingHistory = false;
-
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (input.value && username) {
-    socket.emit('chat message', { username, message: input.value });
-    input.value = '';
-    input.focus();
-  } else {
-    alert('Please enter a message');
-  }
-});
-
-socket.on('chat history', (msgs) => {
-  loadedMessagesCount = msgs.length;
-  msgs.forEach(data => appendMessage(data));
-  scrollToBottom();
-});
-
-socket.on('user connected', (username) => {
-  const item = document.createElement('li');
-  item.innerHTML = `<em>${username} joined the chat</em>`;
-  item.style.textAlign = 'center';
-  item.style.fontStyle = 'italic';
-  item.classList.add('status');
-  messages.appendChild(item);
-  scrollToBottom();
-});
-
-socket.on('chat message', (data) => {
-  const item = document.createElement('li');
-
-  if (data.type === 'status') {
-    item.innerHTML = `<em>${data.message}</em>`;
-    item.style.textAlign = 'center';
-    item.style.fontStyle = 'italic';
-    item.classList.add('status');
-  } else {
-    item.textContent = `${data.username}: ${data.message}`;
-  }
-
-  messages.appendChild(item);
-  scrollToBottom();
-});
-
-socket.on('user disconnected', (username) => {
-  const item = document.createElement('li');
-  item.innerHTML = `<em>${username} left the chat</em>`;
-  item.style.textAlign = 'center';
-  item.style.fontStyle = 'italic';
-  item.classList.add('status');
-  messages.appendChild(item);
-  scrollToBottom();
-});
-
-function appendMessage(data) {
-  const item = document.createElement('li');
-
-  if (data.type === 'status') {
-    item.innerHTML = `<em>${data.message}</em>`;
-    item.style.textAlign = 'center';
-    item.style.fontStyle = 'italic';
-    item.classList.add('status');
-  } else {
-    item.textContent = `${data.username}: ${data.message}`;
-  }
-
-  messages.appendChild(item);
-}
-
-function prependMessages(msgs) {
-  const oldScrollHeight = messages.scrollHeight;
-
-  msgs.forEach(data => {
-    const item = document.createElement('li');
-
-    if (data.type === 'status') {
-      item.innerHTML = `<em>${data.message}</em>`;
-      item.style.textAlign = 'center';
-      item.style.fontStyle = 'italic';
-      item.classList.add('status');
-    } else {
-      item.textContent = `${data.username}: ${data.message}`;
-    }
-
-    messages.insertBefore(item, messages.firstChild);
-  });
-
-  messages.scrollTop = messages.scrollHeight - oldScrollHeight;
-}
-
-messages.addEventListener('scroll', async () => {
-  if (messages.scrollTop === 0 && !isLoadingHistory) {
-    isLoadingHistory = true;
-    try {
-      const res = await fetch(`/messages?skip=${loadedMessagesCount}`);
-      if (res.ok) {
-        const olderMessages = await res.json();
-        if (olderMessages.length > 0) {
-          loadedMessagesCount += olderMessages.length;
-          prependMessages(olderMessages);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load older messages', err);
-    }
-    isLoadingHistory = false;
-  }
-});
-
-function scrollToBottom() {
-  messages.scrollTop = messages.scrollHeight;
-}*/
-
 const socket = io();
 
 const form = document.getElementById('form');
@@ -138,34 +10,156 @@ if (!username) {
   window.location.href = '/login';
 }
 
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '';
+  
+  const messageDate = new Date(timestamp);
+  const now = new Date();
+  const isToday = messageDate.toDateString() === now.toDateString();
+  
+  if (isToday) {
+    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+    return messageDate.toLocaleDateString([], { hour: '2-digit', minute: '2-digit',day: '2-digit', month: 'short', year: 'numeric' });
+  }
+}
+
 function createMessageElement(data) {
   const item = document.createElement('li');
-  item.dataset.id = data._id || ''; // unique message id (important)
+  item.dataset.id = data._id || '';
 
-  if (data.type === 'status') {
+  if (data.type === 'status' || data.username === null) {
+
     item.innerHTML = `<em>${data.message}</em>`;
     item.style.textAlign = 'center';
     item.style.fontStyle = 'italic';
     item.classList.add('status');
   } else {
-    item.textContent = `${data.username}: ${data.message}`;
+    const messageContainer = document.createElement('div');
+    messageContainer.className = 'message-container';
+    
+    const messageHeader = document.createElement('div');
+    messageHeader.className = 'message-header';
+    
+    const usernameSpan = document.createElement('span');
+    usernameSpan.className = 'username';
+    usernameSpan.textContent = data.username;
+    
+    const timestampSpan = document.createElement('span');
+    timestampSpan.className = 'timestamp';
+    timestampSpan.textContent = formatTimestamp(data.timestamp);
+    
+    messageHeader.appendChild(usernameSpan);
+    messageHeader.appendChild(timestampSpan);
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = data.message;
+    
+    messageContainer.appendChild(messageHeader);
+    messageContainer.appendChild(messageContent);
+    
+    item.appendChild(messageContainer);
 
     if (data.username === username) {
-      // Edit button
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'message-buttons';
+      buttonContainer.style.display = 'none';
+      
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
-      editBtn.style.marginLeft = '10px';
-      editBtn.onclick = () => editMessage(data._id, item);
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        editMessage(data._id, item);
+        buttonContainer.style.display = 'none';
+      };
 
-      // Delete button
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
-      delBtn.style.marginLeft = '5px';
-      delBtn.onclick = () => deleteMessage(data._id, item);
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteMessage(data._id, item);
+        buttonContainer.style.display = 'none';
+      };
 
-      item.appendChild(editBtn);
-      item.appendChild(delBtn);
+      buttonContainer.appendChild(editBtn);
+      buttonContainer.appendChild(delBtn);
+      
+      item.appendChild(buttonContainer);
+
+      item.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+
+        document.querySelectorAll('.message-buttons').forEach(btn => {
+          btn.style.display = 'none';
+        });
+
+        document.body.appendChild(buttonContainer);
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.zIndex = '9999';
+        buttonContainer.style.position = 'fixed';
+        buttonContainer.style.left = `${e.clientX}px`;
+        buttonContainer.style.top = `${e.clientY}px`;
+        const buttonRect = buttonContainer.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        if (e.clientX + buttonRect.width > viewportWidth) {
+          buttonContainer.style.left = `${viewportWidth - buttonRect.width - 10}px`;
+        }
+        
+        if (e.clientY + buttonRect.height > viewportHeight) {
+          buttonContainer.style.top = `${viewportHeight - buttonRect.height - 10}px`;
+        }
+
+        const hideButtons = () => {
+          buttonContainer.style.display = 'none';
+          document.removeEventListener('click', hideButtons);
+        };
+
+        setTimeout(() => {
+          document.addEventListener('click', hideButtons);
+        }, 100);
+      });
+      
+
+      item.addEventListener('click', (e) => {
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+          e.preventDefault();
+          document.querySelectorAll('.message-buttons').forEach(btn => {
+            btn.style.display = 'none';
+          });
+
+          document.body.appendChild(buttonContainer);
+          buttonContainer.style.display = 'flex';
+          buttonContainer.style.zIndex = '9999';
+          buttonContainer.style.position = 'fixed';
+          buttonContainer.style.left = `${e.clientX - 40}px`;
+          buttonContainer.style.top = `${e.clientY - 20}px`;
+          const buttonRect = buttonContainer.getBoundingClientRect();
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          if (e.clientX + buttonRect.width > viewportWidth) {
+            buttonContainer.style.left = `${viewportWidth - buttonRect.width - 10}px`;
+          }
+          
+          if (e.clientY + buttonRect.height > viewportHeight) {
+            buttonContainer.style.top = `${viewportHeight - buttonRect.height - 10}px`;
+          }
+
+          const hideButtons = () => {
+            buttonContainer.style.display = 'none';
+            document.removeEventListener('click', hideButtons);
+          };
+
+          setTimeout(() => {
+            document.addEventListener('click', hideButtons);
+          }, 100);
+        }
+      });
     }
+    
   }
 
   return item;
@@ -197,12 +191,13 @@ socket.on('chat message', (data) => {
   scrollToBottom();
 });
 
-// Socket listeners for edited and deleted messages:
 socket.on('message edited', (updatedMsg) => {
   const item = [...messages.children].find(li => li.dataset.id === updatedMsg._id);
   if (item) {
-    // Update text while keeping buttons intact
-    item.firstChild.nodeValue = `${updatedMsg.username}: ${updatedMsg.message}`;
+    const messageContent = item.querySelector('.message-content');
+    if (messageContent) {
+      messageContent.textContent = updatedMsg.message;
+    }
   }
 });
 
@@ -211,9 +206,9 @@ socket.on('message deleted', (id) => {
   if (item) item.remove();
 });
 
-// Edit message function
 async function editMessage(id, itemElement) {
-  const currentText = itemElement.firstChild.nodeValue.split(': ').slice(1).join(': '); // extract message text
+  const messageContent = itemElement.querySelector('.message-content');
+  const currentText = messageContent.textContent;
   const newMessage = prompt('Edit your message:', currentText);
   if (newMessage === null || newMessage.trim() === '') return;
 
@@ -226,7 +221,7 @@ async function editMessage(id, itemElement) {
 
     if (res.ok) {
       const updatedMsg = await res.json();
-      itemElement.firstChild.nodeValue = `${updatedMsg.username}: ${updatedMsg.message}`;
+      messageContent.textContent = updatedMsg.message;
     } else {
       alert('Failed to edit message');
     }
@@ -235,7 +230,6 @@ async function editMessage(id, itemElement) {
   }
 }
 
-// Delete message function
 async function deleteMessage(id, itemElement) {
   if (!confirm('Are you sure you want to delete this message?')) return;
 

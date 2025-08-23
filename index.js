@@ -63,11 +63,6 @@ passport.deserializeUser(async (username, cb) => {
 
 const app = express();
 
-app.use((req, res, next) => {
-  res.setHeader('ngrok-skip-browser-warning', 'true');
-  next();
-});
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -133,37 +128,6 @@ app.get('/messages', async (req, res) => {
   }
 });
 
-// Edit message endpoint
-/*app.put('/messages/:id', async (req, res) => {
-  const { id } = req.params;
-  const { username, newMessage } = req.body;
-
-  const message = await Message.findById(id);
-  if (!message) return res.status(404).send('Message not found');
-  if (message.username !== username) return res.status(403).send('Forbidden: Not your message');
-
-  message.message = newMessage;
-  await message.save();
-
-  io.emit('message edited', message);
-  res.send(message);
-});
-
-// Delete message endpoint
-app.delete('/messages/:id', async (req, res) => {
-  const { id } = req.params;
-  const { username } = req.body;
-
-  const message = await Message.findById(id);
-  if (!message) return res.status(404).send('Message not found');
-  if (message.username !== username) return res.status(403).send('Forbidden: Not your message');
-
-  await message.remove();
-
-  io.emit('message deleted', id);
-  res.send({ success: true });
-});*/
-
 app.put('/messages/:id', async (req, res) => {
   const { id } = req.params;
   const { username, newMessage } = req.body;
@@ -226,7 +190,6 @@ io.on('connection', async (socket) => {
   const username = socket.request.user?.username;
   if (!username) return;
 
-  // Send last 50 messages including chat and status
   const recentMessages = await messagesCollection
     .find({})
     .sort({ timestamp: -1 })
@@ -235,7 +198,6 @@ io.on('connection', async (socket) => {
 
   socket.emit('chat history', recentMessages.reverse());
 
-  // Broadcast user joined
   const joinMsg = {
     username: null,
     message: `${username} joined the chat`,
