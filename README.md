@@ -9,6 +9,7 @@ __Upcoming features :__
 and more !
 
 __Endpoints :__
-- / -> Chat
+- / -> Homepage
+- /app -> Chat
 - /login -> Chat access
 - /register -> Account creation
