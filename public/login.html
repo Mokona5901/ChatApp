@@ -1,90 +1,3 @@
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login - Chat App</title>
-  <link rel="stylesheet" href="login.css" />
-</head>
-<body>
-  <div id="login-container">
-    <h1>Login</h1>
-    <form action="/login" method="POST" id="login-form">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" required autocomplete="off" />
-
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="off" />
-
-      <button type="submit">Login</button>
-    </form>
-    <p>
-      Don't have an account?
-      <a href="/register" class="link">Register here</a>
-    </p>
-  </div>
-</body>
-</html>-->
-
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login - Chat App</title>
-  <link rel="stylesheet" href="login.css" />
-</head>
-<body>
-  <div id="login-container">
-    <h1>Login</h1>
-    <form id="login-form">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" required autocomplete="off" />
-
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="off" />
-
-      <button type="submit">Login</button>
-    </form>
-    <p>
-      Don't have an account?
-      <a href="/register" class="link">Register here</a>
-    </p>
-  </div>
-
-  <script>
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      try {
-        const res = await fetch('/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Send session cookie
-          body: JSON.stringify({ username, password })
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem('username', data.username);
-          window.location.href = '/';
-        } else {
-          const text = await res.text();
-          alert('Login failed: ' + text);
-        }
-      } catch (err) {
-        alert('Login error: ' + err.message);
-      }
-    });
-  </script>
-</body>
-</html>-->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,8 +17,6 @@
       <input type="password" id="password" name="password" required autocomplete="off" />
 
       <button type="submit">Login</button>
-
-      <!-- 👇 moved inside form -->
       <p>
         Don't have an account?
         <a href="/register" class="link">Register here</a>
@@ -133,7 +44,7 @@
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('username', data.username);
-          window.location.href = '/';
+          window.location.href = '/app';
         } else {
           const text = await res.text();
           alert('Login failed: ' + text);

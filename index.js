@@ -170,11 +170,16 @@ app.delete('/messages/:id', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/home.html'));
+});
+
+app.get('/app', (req, res) => {
   if (!req.isAuthenticated()) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public/index.html'));
-});
+})
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 const wrap = (mw) => (socket, next) => mw(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
