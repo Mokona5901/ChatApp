@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App</title>
+  <title>ChatApp</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
 </head>
 <body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px;">
+    <img src="assets/logo.svg" alt="ChatApp Logo" style="max-width: 100px; height: auto;">
+    <span style="color: #6200ea; font-size: 24px; font-weight: bold;">ChatApp</span>
+  </div>
   <div id="chat-container">
     <ul id="messages"></ul>
     <form id="form">
@@ -16,6 +21,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>

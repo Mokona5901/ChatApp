@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Register - Chat App</title>
+  <title>Register - ChatApp</title>
   <link rel="stylesheet" href="register.css" />
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
 </head>
 <body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px;">
+    <img src="assets/logo.svg" alt="ChatApp Logo" style="max-width: 100px; height: auto;">
+    <span style="color: #6200ea; font-size: 24px; font-weight: bold;">ChatApp</span>
+  </div>
   <div id="register-container">
-    <h1>Create Account for Chat App</h1>
+    <h1>Create account for ChatApp</h1>
     <form action="/register" method="POST" id="register-form">
       <label for="username">Username</label>
       <input type="text" id="username" name="username" required autocomplete="off" />

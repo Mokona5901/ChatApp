@@ -1,10 +1,9 @@
 const socket = io();
-
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const messages = document.getElementById('messages');
-
 let username = localStorage.getItem('username');
+
 if (!username) {
   alert('You must be logged in.');
   window.location.href = '/login';
@@ -122,7 +121,6 @@ function createMessageElement(data) {
         }, 100);
       });
       
-
       item.addEventListener('click', (e) => {
         if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
           e.preventDefault();
@@ -161,7 +159,6 @@ function createMessageElement(data) {
     }
     
   }
-
   return item;
 }
 

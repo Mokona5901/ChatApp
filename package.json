@@ -1,7 +1,7 @@
 {
   "name": "chat-app",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "keywords": [],
   "author": "Mokona59",
   "license": "ISC",
@@ -15,8 +15,6 @@
     "mongodb": "^6.17.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
     "socket.io": "^4.8.1"
   }
 }

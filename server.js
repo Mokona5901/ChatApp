@@ -176,7 +176,7 @@ app.get('/', (req, res) => {
 
 app.get('/app', (req, res) => {
   if (!req.isAuthenticated()) return res.redirect('/login');
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public/app.html'));
 })
 
 app.use(express.static(path.join(__dirname, 'public')));
