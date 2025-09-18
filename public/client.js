@@ -1,13 +1,89 @@
 const socket = io();
+
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const messages = document.getElementById('messages');
+const uploadButton = document.querySelector('.upload-button');
+const imageUploadModal = document.getElementById('imageUploadModal');
+const imageUploadForm = document.getElementById('imageUploadForm');
+const imageFileInput = document.getElementById('imageFile');
+const closeModal = document.querySelector('.close-modal');
+const onlineUsersList = document.getElementById('online-users-list');
+
 let username = localStorage.getItem('username');
+let imageBase64 = null;
+
+const MAX_IMAGE_SIZE_MB = 32;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 if (!username) {
   alert('You must be logged in.');
   window.location.href = '/login';
 }
+
+uploadButton.addEventListener('click', () => {
+  imageUploadModal.style.display = 'block';
+});
+
+closeModal.addEventListener('click', () => {
+  imageUploadModal.style.display = 'none';
+});
+
+imageFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      alert(`Image size exceeds the limit of ${MAX_IMAGE_SIZE_MB}MB.`);
+      imageFileInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imageBase64 = e.target.result;
+      imageUploadForm.dispatchEvent(new Event('submit'));
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+imageUploadForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (imageBase64) {
+    try {
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageBase64 }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        socket.emit('chat message', { username, imageUrl: data.url, type: 'image' });
+        imageBase64 = null;
+        imageFileInput.value = '';
+        imageUploadModal.style.display = 'none';
+      } else {
+        alert('Image upload failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Image upload failed. Please try again.');
+    }
+  }
+});
+
+input.addEventListener('paste', (e) => {
+  const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+  if (pastedText.match(/\.(jpeg|jpg|gif|png)$/) != null) {
+    socket.emit('chat message', { username, imageUrl: pastedText, type: 'image' });
+    e.preventDefault();
+  }
+});
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return '';
@@ -21,6 +97,80 @@ function formatTimestamp(timestamp) {
   } else {
     return messageDate.toLocaleDateString([], { hour: '2-digit', minute: '2-digit',day: '2-digit', month: 'short', year: 'numeric' });
   }
+}
+
+function setupMessageButtons(item, data) {
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'message-buttons';
+  buttonContainer.style.display = 'none';
+  
+  if (!data.imageUrl) {
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      editMessage(data._id, item);
+      buttonContainer.style.display = 'none';
+    };
+    buttonContainer.appendChild(editBtn);
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.textContent = 'Delete';
+  delBtn.onclick = (e) => {
+    e.stopPropagation();
+    deleteMessage(data._id, item);
+    buttonContainer.style.display = 'none';
+  };
+
+  buttonContainer.appendChild(delBtn);
+  
+  item.appendChild(buttonContainer);
+
+  const showButtons = (clientX, clientY) => {
+    document.querySelectorAll('.message-buttons').forEach(btn => {
+      btn.style.display = 'none';
+    });
+
+    document.body.appendChild(buttonContainer);
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.zIndex = '9999';
+    buttonContainer.style.position = 'fixed';
+    buttonContainer.style.left = `${clientX}px`;
+    buttonContainer.style.top = `${clientY}px`;
+    const buttonRect = buttonContainer.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    if (clientX + buttonRect.width > viewportWidth) {
+      buttonContainer.style.left = `${viewportWidth - buttonRect.width - 10}px`;
+    }
+    
+    if (clientY + buttonRect.height > viewportHeight) {
+      buttonContainer.style.top = `${viewportHeight - buttonRect.height - 10}px`;
+    }
+
+    const hideButtons = () => {
+      buttonContainer.style.display = 'none';
+      document.removeEventListener('click', hideButtons);
+    };
+
+    setTimeout(() => {
+      document.addEventListener('click', hideButtons);
+    }, 100);
+  };
+
+  item.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showButtons(e.clientX, e.clientY);
+  });
+  
+  item.addEventListener('click', (e) => {
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      e.preventDefault();
+      showButtons(e.clientX - 40, e.clientY - 20);
+    }
+  });
 }
 
 function createMessageElement(data) {
@@ -53,7 +203,16 @@ function createMessageElement(data) {
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
-    messageContent.textContent = data.message;
+    
+    if (data.imageUrl) {
+      const image = document.createElement('img');
+      image.src = data.imageUrl;
+      image.style.maxWidth = '300px';
+      image.style.maxHeight = '300px';
+      messageContent.appendChild(image);
+    } else {
+      messageContent.textContent = data.message;
+    }
     
     messageContainer.appendChild(messageHeader);
     messageContainer.appendChild(messageContent);
@@ -61,101 +220,7 @@ function createMessageElement(data) {
     item.appendChild(messageContainer);
 
     if (data.username === username) {
-      const buttonContainer = document.createElement('div');
-      buttonContainer.className = 'message-buttons';
-      buttonContainer.style.display = 'none';
-      
-      const editBtn = document.createElement('button');
-      editBtn.textContent = 'Edit';
-      editBtn.onclick = (e) => {
-        e.stopPropagation();
-        editMessage(data._id, item);
-        buttonContainer.style.display = 'none';
-      };
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Delete';
-      delBtn.onclick = (e) => {
-        e.stopPropagation();
-        deleteMessage(data._id, item);
-        buttonContainer.style.display = 'none';
-      };
-
-      buttonContainer.appendChild(editBtn);
-      buttonContainer.appendChild(delBtn);
-      
-      item.appendChild(buttonContainer);
-
-      item.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-
-        document.querySelectorAll('.message-buttons').forEach(btn => {
-          btn.style.display = 'none';
-        });
-
-        document.body.appendChild(buttonContainer);
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.zIndex = '9999';
-        buttonContainer.style.position = 'fixed';
-        buttonContainer.style.left = `${e.clientX}px`;
-        buttonContainer.style.top = `${e.clientY}px`;
-        const buttonRect = buttonContainer.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        if (e.clientX + buttonRect.width > viewportWidth) {
-          buttonContainer.style.left = `${viewportWidth - buttonRect.width - 10}px`;
-        }
-        
-        if (e.clientY + buttonRect.height > viewportHeight) {
-          buttonContainer.style.top = `${viewportHeight - buttonRect.height - 10}px`;
-        }
-
-        const hideButtons = () => {
-          buttonContainer.style.display = 'none';
-          document.removeEventListener('click', hideButtons);
-        };
-
-        setTimeout(() => {
-          document.addEventListener('click', hideButtons);
-        }, 100);
-      });
-      
-      item.addEventListener('click', (e) => {
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-          e.preventDefault();
-          document.querySelectorAll('.message-buttons').forEach(btn => {
-            btn.style.display = 'none';
-          });
-
-          document.body.appendChild(buttonContainer);
-          buttonContainer.style.display = 'flex';
-          buttonContainer.style.zIndex = '9999';
-          buttonContainer.style.position = 'fixed';
-          buttonContainer.style.left = `${e.clientX - 40}px`;
-          buttonContainer.style.top = `${e.clientY - 20}px`;
-          const buttonRect = buttonContainer.getBoundingClientRect();
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-          
-          if (e.clientX + buttonRect.width > viewportWidth) {
-            buttonContainer.style.left = `${viewportWidth - buttonRect.width - 10}px`;
-          }
-          
-          if (e.clientY + buttonRect.height > viewportHeight) {
-            buttonContainer.style.top = `${viewportHeight - buttonRect.height - 10}px`;
-          }
-
-          const hideButtons = () => {
-            buttonContainer.style.display = 'none';
-            document.removeEventListener('click', hideButtons);
-          };
-
-          setTimeout(() => {
-            document.addEventListener('click', hideButtons);
-          }, 100);
-        }
-      });
+      setupMessageButtons(item, data);
     }
     
   }
@@ -250,3 +315,22 @@ async function deleteMessage(id, itemElement) {
 function scrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
+
+socket.on('online users', (users) => {
+  onlineUsersList.innerHTML = '';
+  users.forEach(user => {
+    const li = document.createElement('li');
+    li.textContent = user;
+    onlineUsersList.appendChild(li);
+  });
+});
+
+const toggleButton = document.getElementById('toggle-online-users');
+toggleButton.addEventListener('click', () => {
+  const onlineUsers = document.getElementById('online-users');
+  if (onlineUsers.style.display === 'none' || onlineUsers.style.display === '') {
+    onlineUsers.style.display = 'block';
+  } else {
+    onlineUsers.style.display = 'none';
+  }
+});

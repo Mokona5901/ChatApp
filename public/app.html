@@ -9,15 +9,37 @@
 </head>
 <body>
   <div style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px;">
-    <img src="assets/logo.svg" alt="ChatApp Logo" style="max-width: 100px; height: auto;">
+    <img src="assets/logo.svg" alt="ChatApp Logo" class="logo-img" style="height: auto;">
     <span style="color: #6200ea; font-size: 24px; font-weight: bold;">ChatApp</span>
   </div>
-  <div id="chat-container">
-    <ul id="messages"></ul>
-    <form id="form">
-      <input id="input" autocomplete="off" placeholder="Type a message..." />
-      <button>Send</button>
-    </form>
+  <div id="chat-container" style="display: flex; gap: 20px;">
+    <div class="chat-main" style="flex-grow: 1; display: flex; flex-direction: column;">
+      <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+        <h3>Chat</h3>
+        <button id="toggle-online-users" class="toggle-btn" style="display: none; background: #6200ea; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer;"><img class="img-center" src="assets/user.png" height="25" width="25"></button>
+      </div>
+      <ul id="messages"></ul>
+      <form id="form">
+        <input id="input" autocomplete="off" placeholder="Type a message..." />
+        <button><img class="img-center" src="assets/send.png" height="25" width="25"></button>
+        <button type="button" class="upload-button" title="Upload Image"><img class="img-center" src="assets/camera.png" height="25" width="25"></button>
+      </form>
+    </div>
+    <div id="online-users" style="width: 200px; border-left: 1px solid #ccc; padding-left: 10px;">
+      <h3>Online Users</h3>
+      <ul id="online-users-list" style="list-style: none; padding-left: 0;"></ul>
+    </div>
+  </div>
+
+  <div id="imageUploadModal" class="image-upload-modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3>Upload Image</h3>
+      <form id="imageUploadForm">
+        <input type="file" id="imageFile" accept="image/*" />
+        <button type="submit">Upload Image</button>
+      </form>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

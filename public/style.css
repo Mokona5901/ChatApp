@@ -56,16 +56,73 @@ h1 {
 }
 
 #chat-container {
-  display: none;
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
   background-color: #1f1f1f;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  gap: 20px;
   height: 80vh;
+  padding: 10px;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+#online-users {
+  width: 600px;
+  border-left: 1px;
+  padding-left: 10px;
+}
+
+.logo-img {
+  max-width: 100px;
+}
+
+@media (max-width: 768px) {
+  .logo-img {
+    max-width: 33.333px;
+  }
+
+  #toggle-online-users {
+    display: block !important;
+  }
+
+  #chat-container {
+    flex-direction: column;
+    height: auto;
+    gap: 10px;
+    position: relative;
+  }
+
+  #online-users {
+    display: none;
+    width: 100%;
+    border-left: none;
+    border-top: 1px;
+    padding-left: 0;
+    padding-top: 10px;
+    position: absolute;
+    left: 0;
+    background-color: #1f1f1f;
+    z-index: 10000;
+    height: 600px;
+    width: 600px;
+    overflow-y: auto;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .chat-main {
+    height: 60vh;
+  }
 }
 
 #messages {
@@ -269,4 +326,85 @@ button:hover {
   color: #e0e0e0;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.image-upload-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: #1f1f1f;
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid #6200ea;
+}
+
+.close-modal {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-modal:hover {
+  color: #e0e0e0;
+}
+
+#imageUploadForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#imageURL {
+  padding: 10px;
+  border: 1px solid #6200ea;
+  border-radius: 5px;
+  background-color: #333;
+  color: #fff;
+  width: 100%;
+}
+
+#imageUploadForm button {
+  padding: 10px 16px;
+  background-color: #6200ea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#imageUploadForm button:hover {
+  background-color: #3700b3;
+}
+
+.upload-button {
+  padding: 10px;
+  background-color: #6200ea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+  color: #bb86fc;
+}
+
+.img-center {
+  transform: translateX(-10%);
 }
