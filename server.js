@@ -10,6 +10,7 @@ const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoStore = require('connect-mongo');
 const imgbbUploader = require('imgbb-uploader');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,6 +19,8 @@ const io = new Server(server);
 app.use((req, res, next) => {
   next();
 });
+
+app.use(cors());
 
 const client = new MongoClient(process.env.URI);
 let usersCollection, messagesCollection;
@@ -92,8 +95,8 @@ app.post('/api/upload-image', async (req, res) => {
       base64string: base64Data,
     });
     console.log('ImgBB response:', response);
-    if (response?.data?.url) {
-      res.json({ success: true, url: response.data.url });
+    if (response?.url) {
+      res.json({ success: true, url: response.url });
     } else {
       console.error('Unexpected ImgBB response:', response);
       res.status(502).json({ success: false, message: 'Unexpected response from ImgBB.' });
@@ -133,8 +136,9 @@ app.post('/login', (req, res, next) => {
 
 app.get('/messages', async (req, res) => {
   const skip = parseInt(req.query.skip) || 0;
+  const channel = req.query.channel || 'general';
   try {
-    const msgs = await messagesCollection.find({}).sort({ timestamp: -1 }).skip(skip).limit(50).toArray();
+    const msgs = await messagesCollection.find({ channel }).sort({ timestamp: -1 }).skip(skip).limit(50).toArray();
     res.json(msgs.reverse());
   } catch (err) {
     console.error(err);
@@ -194,11 +198,23 @@ io.on('connection', async (socket) => {
   const username = socket.request.user?.username;
   if (!username) return;
 
+  socket.channel = 'general';
+  socket.join('general');
+
   onlineUsers.add(username);
   io.emit('online users', Array.from(onlineUsers));
 
-  const history = await messagesCollection.find({}).sort({ timestamp: -1 }).limit(50).toArray();
+  const history = await messagesCollection.find({ channel: 'general' }).sort({ timestamp: -1 }).limit(50).toArray();
   socket.emit('chat history', history.reverse());
+
+  socket.on('join channel', (channel) => {
+    socket.leave(socket.channel);
+    socket.join(channel);
+    socket.channel = channel;
+    messagesCollection.find({ channel }).sort({ timestamp: -1 }).limit(50).toArray().then(history => {
+      socket.emit('chat history', history.reverse());
+    });
+  });
 
   socket.on('chat message', async (data) => {
     const msg = {
@@ -206,15 +222,19 @@ io.on('connection', async (socket) => {
       message: data.message,
       imageUrl: data.imageUrl,
       type: data.type || 'chat',
-      timestamp: new Date()
+      timestamp: new Date(),
+      replyTo: data.replyTo,
+      channel: socket.channel
     };
     await messagesCollection.insertOne(msg);
-    io.emit('chat message', msg);
+    io.to(socket.channel).emit('chat message', msg);
   });
 
   socket.on('disconnect', () => {
-    onlineUsers.delete(username);
-    io.emit('online users', Array.from(onlineUsers));
+    setTimeout(() => {
+      onlineUsers.delete(username);
+      io.emit('online users', Array.from(onlineUsers));
+    }, 10000);
   });
 });
 

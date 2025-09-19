@@ -15,7 +15,13 @@
   <div id="chat-container" style="display: flex; gap: 20px;">
     <div class="chat-main" style="flex-grow: 1; display: flex; flex-direction: column;">
       <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
-        <h3>Chat</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3>Chat</h3>
+          <select id="channel-select" style="padding: 5px; background-color: #333; color: #fff; border: 1px solid #6200ea; border-radius: 5px;">
+            <option value="general">General</option>
+            <option value="random">Random</option>
+          </select>
+        </div>
         <button id="toggle-online-users" class="toggle-btn" style="display: none; background: #6200ea; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer;"><img class="img-center" src="assets/user.png" height="25" width="25"></button>
       </div>
       <ul id="messages"></ul>

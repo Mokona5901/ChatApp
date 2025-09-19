@@ -9,7 +9,7 @@
 </head>
 <body>
   <div style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px;">
-    <img src="assets/logo.svg" alt="ChatApp Logo" style="max-width: 100px; height: auto;">
+    <img src="assets/logo.svg" alt="ChatApp Logo" class="logo-img" style="height: auto;">
     <span style="color: #6200ea; font-size: 24px; font-weight: bold;">ChatApp</span>
   </div>
   <div id="register-container">
@@ -19,10 +19,20 @@
       <input type="text" id="username" name="username" required autocomplete="off" />
 
       <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="off" />
+      <div class="input-wrapper">
+        <input type="password" id="password" name="password" required autocomplete="off">
+        <button type="button" id="toggle-password">
+          <img src="assets/show.png" alt="Show" height="20px" width="20px">
+        </button>
+      </div>
 
       <label for="confirm-password">Confirm Password</label>
-      <input type="password" id="confirm-password" name="confirm-password" required autocomplete="off" />
+      <div class="input-wrapper">
+        <input type="password" id="confirm-password" name="confirm-password" required autocomplete="off">
+        <button type="button" id="toggle-confirm-password">
+          <img src="assets/show.png" alt="Show" height="20px" width="20px">
+        </button>
+      </div>
 
       <button type="submit">Register</button>
     </form>
@@ -31,5 +41,28 @@
       <a href="/login" class="link">Login here</a>
     </p>
   </div>
+
+  <script>
+    function togglePassword(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        button.innerHTML = '<img src="assets/hide.png" alt="Hide" height="20px" width="20px">';
+      } else {
+        input.type = 'password';
+        button.innerHTML = '<img src="assets/show.png" alt="Show" height="20px" width="20px">';
+      }
+    }
+
+    document.getElementById('toggle-password').addEventListener('click', () => {
+      togglePassword('password', 'toggle-password');
+    });
+
+    document.getElementById('toggle-confirm-password').addEventListener('click', () => {
+      togglePassword('confirm-password', 'toggle-confirm-password');
+    });
+  </script>
 </body>
 </html>
+

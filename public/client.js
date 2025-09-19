@@ -9,9 +9,12 @@ const imageUploadForm = document.getElementById('imageUploadForm');
 const imageFileInput = document.getElementById('imageFile');
 const closeModal = document.querySelector('.close-modal');
 const onlineUsersList = document.getElementById('online-users-list');
+const channelSelect = document.getElementById('channel-select');
 
 let username = localStorage.getItem('username');
 let imageBase64 = null;
+let replyTo = null;
+let currentChannel = 'general';
 
 const MAX_IMAGE_SIZE_MB = 32;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
@@ -20,6 +23,15 @@ if (!username) {
   alert('You must be logged in.');
   window.location.href = '/login';
 }
+
+channelSelect.addEventListener('change', () => {
+  const newChannel = channelSelect.value;
+  if (newChannel !== currentChannel) {
+    socket.emit('join channel', newChannel);
+    currentChannel = newChannel;
+    loadedMessagesCount = 0;
+  }
+});
 
 uploadButton.addEventListener('click', () => {
   imageUploadModal.style.display = 'block';
@@ -103,6 +115,15 @@ function setupMessageButtons(item, data) {
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'message-buttons';
   buttonContainer.style.display = 'none';
+
+  const replyBtn = document.createElement('button');
+  replyBtn.textContent = 'Reply';
+  replyBtn.onclick = (e) => {
+    e.stopPropagation();
+    replyToMessage(data._id, item);
+    buttonContainer.style.display = 'none';
+  };
+  buttonContainer.appendChild(replyBtn);
   
   if (!data.imageUrl) {
     const editBtn = document.createElement('button');
@@ -200,18 +221,54 @@ function createMessageElement(data) {
     
     messageHeader.appendChild(usernameSpan);
     messageHeader.appendChild(timestampSpan);
+
+    if (data.replyTo) {
+      const replyDiv = document.createElement('div');
+      replyDiv.className = 'reply-info';
+      replyDiv.textContent = `Replying to: ${data.replyTo.text}`;
+      messageContainer.appendChild(replyDiv);
+    }
     
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
     
-    if (data.imageUrl) {
+    if (data.type === 'tenor') {
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://tenor.com/embed/${data.postid}?autoplay=1&mute=1`;
+      iframe.width = '300';
+      iframe.height = '300';
+      iframe.frameBorder = '0';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.style.border = 'none';
+      messageContent.appendChild(iframe);
+    } else if (data.imageUrl) {
       const image = document.createElement('img');
       image.src = data.imageUrl;
       image.style.maxWidth = '300px';
       image.style.maxHeight = '300px';
       messageContent.appendChild(image);
     } else {
-      messageContent.textContent = data.message;
+      const messageText = data.message;
+      const tenorMatch = messageText.match(/tenor\.com\/view\/.*-(\d+)/);
+      if (tenorMatch) {
+        const postid = tenorMatch[1];
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://tenor.com/embed/${postid}?autoplay=1&mute=1`;
+        iframe.width = '300';
+        iframe.height = '300';
+        iframe.frameBorder = '0';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.style.border = 'none';
+        messageContent.appendChild(iframe);
+      } else if (messageText.match(/^https?:\/\/.*\.gif$/i)) {
+        const img = document.createElement('img');
+        img.src = messageText;
+        img.style.maxWidth = '300px';
+        img.style.maxHeight = '300px';
+        messageContent.appendChild(img);
+      } else {
+        messageContent.textContent = messageText;
+      }
     }
     
     messageContainer.appendChild(messageHeader);
@@ -230,8 +287,10 @@ function createMessageElement(data) {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   if (input.value && username) {
-    socket.emit('chat message', { username, message: input.value });
+    socket.emit('chat message', { username, message: input.value, replyTo });
     input.value = '';
+    input.placeholder = 'Type a message...';
+    replyTo = null;
     input.focus();
   } else {
     alert('Please enter a message');
@@ -239,6 +298,7 @@ form.addEventListener('submit', (e) => {
 });
 
 socket.on('chat history', (msgs) => {
+  messages.innerHTML = '';
   loadedMessagesCount = msgs.length;
   msgs.forEach(data => {
     const msgEl = createMessageElement(data);
@@ -312,6 +372,13 @@ async function deleteMessage(id, itemElement) {
   }
 }
 
+function replyToMessage(id, item) {
+  const messageText = item.querySelector('.message-content').textContent;
+  replyTo = { id, text: messageText };
+  input.placeholder = `Replying to: ${messageText}`;
+  input.focus();
+}
+
 function scrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
@@ -332,5 +399,29 @@ toggleButton.addEventListener('click', () => {
     onlineUsers.style.display = 'block';
   } else {
     onlineUsers.style.display = 'none';
+  }
+});
+
+let isLoadingOlder = false;
+messages.addEventListener('scroll', async () => {
+  if (messages.scrollTop === 0 && !isLoadingOlder) {
+    isLoadingOlder = true;
+    try {
+      const response = await fetch(`/messages?skip=${loadedMessagesCount}&channel=${currentChannel}`);
+      const olderMsgs = await response.json();
+      if (olderMsgs.length > 0) {
+        const oldScrollHeight = messages.scrollHeight;
+        olderMsgs.forEach(data => {
+          const msgEl = createMessageElement(data);
+          messages.insertBefore(msgEl, messages.firstChild);
+        });
+        loadedMessagesCount += olderMsgs.length;
+        messages.scrollTop = messages.scrollHeight - oldScrollHeight;
+      }
+    } catch (error) {
+      console.error('Error loading older messages:', error);
+    } finally {
+      isLoadingOlder = false;
+    }
   }
 });
