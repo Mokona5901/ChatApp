@@ -178,13 +178,35 @@ app.put('/messages/:id', async (req, res) => {
   }
 });
 
+function getPublicIdFromUrl(url) {
+  if (!url) return null;
+  const cleanUrl = url.split('?')[0];
+  const parts = cleanUrl.split('/upload/');
+  if (parts.length < 2) return null;
+  const pathWithVersion = parts[1];
+  const path = pathWithVersion.replace(/^v\d+\//, '');
+  const lastDot = path.lastIndexOf('.');
+  return lastDot === -1 ? path : path.substring(0, lastDot);
+}
+
 app.delete('/messages/:id', async (req, res) => {
   const { id } = req.params;
   const { username } = req.body;
+
   try {
     const msg = await messagesCollection.findOne({ _id: new ObjectId(id) });
     if (!msg) return res.status(404).send('Message not found');
     if (msg.username !== username) return res.status(403).send('Forbidden');
+
+    if (msg.imageUrl) {
+      const publicId = getPublicIdFromUrl(msg.imageUrl);
+      if (publicId) {
+        cloudinary.uploader.destroy(publicId, (result) => {
+          console.log('Cloudinary delete result:', result);
+        });
+      }
+    }
+
     await messagesCollection.deleteOne({ _id: new ObjectId(id) });
     io.emit('message deleted', id);
     res.send({ success: true });
