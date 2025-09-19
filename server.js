@@ -9,7 +9,8 @@ const { Server } = require('socket.io');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoStore = require('connect-mongo');
-const imgbbUploader = require('imgbb-uploader');
+const { v2: cloudinary } = require('cloudinary');
+const streamifier = require('streamifier');
 const cors = require('cors');
 
 const app = express();
@@ -66,10 +67,15 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
+cloudinary.config({
+  url: process.env.CLOUDINARY_URL,
+});
+
 app.post('/api/upload-image', async (req, res) => {
   try {
     console.log('Upload route hit');
     const { image } = req.body;
+
     if (!image || typeof image !== 'string') {
       return res.status(400).json({ success: false, message: 'Image data missing or invalid.' });
     }
@@ -85,26 +91,35 @@ app.post('/api/upload-image', async (req, res) => {
       return res.status(413).json({ success: false, message: 'Image too large.' });
     }
 
-    if (!process.env.IMG_API) {
-      console.error('Missing IMG_API key');
-      return res.status(500).json({ success: false, message: 'Server misconfigured: missing API key.' });
+    if (!process.env.CLOUDINARY_URL) {
+      console.error('Missing CLOUDINARY_URL key');
+      return res.status(500).json({ success: false, message: 'Server misconfigured: missing CLOUDINARY_URL.' });
     }
 
-    const response = await imgbbUploader({
-      apiKey: process.env.IMG_API,
-      base64string: base64Data,
-    });
-    console.log('ImgBB response:', response);
-    if (response?.url) {
-      res.json({ success: true, url: response.url });
+    const uploadFromBuffer = (buffer) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'chatapp' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+      });
+
+    const result = await uploadFromBuffer(buffer);
+    console.log('Cloudinary response:', result);
+
+    if (result?.secure_url) {
+      return res.json({ success: true, url: result.secure_url });
     } else {
-      console.error('Unexpected ImgBB response:', response);
-      res.status(502).json({ success: false, message: 'Unexpected response from ImgBB.' });
+      console.error('Unexpected Cloudinary response:', result);
+      return res.status(502).json({ success: false, message: 'Unexpected response from Cloudinary.' });
     }
   } catch (error) {
     console.error('Upload error:', error);
-    const msg = error?.response?.data?.error?.message || error.message || 'Unknown error';
-    res.status(500).json({ success: false, message: `Upload failed: ${msg}` });
+    return res.status(500).json({ success: false, message: `Upload failed: ${error.message || 'Unknown error'}` });
   }
 });
 
