@@ -10,6 +10,15 @@ const imageFileInput = document.getElementById('imageFile');
 const closeModal = document.querySelector('.close-modal');
 const onlineUsersList = document.getElementById('online-users-list');
 const channelSelect = document.getElementById('channel-select');
+const zoomModal = document.getElementById('zoomModal');
+const zoomedImage = document.getElementById('zoomedImage');
+const closeZoom = document.querySelector('.close-zoom');
+const zoomSlider = document.getElementById('zoomSlider');
+const tenorModal = document.getElementById('tenorModal');
+const tenorButton = document.getElementById('tenor-button');
+const closeTenorModal = document.querySelector('.close-tenor-modal');
+const tenorSearch = document.getElementById('tenor-search');
+const tenorResults = document.getElementById('tenor-results');
 
 let username = localStorage.getItem('username');
 let imageBase64 = null;
@@ -125,26 +134,28 @@ function setupMessageButtons(item, data) {
   };
   buttonContainer.appendChild(replyBtn);
   
-  if (!data.imageUrl) {
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit';
-    editBtn.onclick = (e) => {
+  if (data.username === username) {
+    if (!data.imageUrl) {
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        editMessage(data._id, item);
+        buttonContainer.style.display = 'none';
+      };
+      buttonContainer.appendChild(editBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = (e) => {
       e.stopPropagation();
-      editMessage(data._id, item);
+      deleteMessage(data._id, item);
       buttonContainer.style.display = 'none';
     };
-    buttonContainer.appendChild(editBtn);
+
+    buttonContainer.appendChild(delBtn);
   }
-
-  const delBtn = document.createElement('button');
-  delBtn.textContent = 'Delete';
-  delBtn.onclick = (e) => {
-    e.stopPropagation();
-    deleteMessage(data._id, item);
-    buttonContainer.style.display = 'none';
-  };
-
-  buttonContainer.appendChild(delBtn);
   
   item.appendChild(buttonContainer);
 
@@ -225,7 +236,11 @@ function createMessageElement(data) {
     if (data.replyTo) {
       const replyDiv = document.createElement('div');
       replyDiv.className = 'reply-info';
-      replyDiv.textContent = `Replying to: ${data.replyTo.text}`;
+      if (data.replyTo.username) {
+        replyDiv.textContent = `Replying to ${data.replyTo.username}: ${data.replyTo.text}`;
+      } else {
+        replyDiv.textContent = `Replying to: ${data.replyTo.text}`;
+      }
       messageContainer.appendChild(replyDiv);
     }
     
@@ -246,6 +261,12 @@ function createMessageElement(data) {
       image.src = data.imageUrl;
       image.style.maxWidth = '300px';
       image.style.maxHeight = '300px';
+      image.addEventListener('click', () => {
+        zoomedImage.src = image.src;
+        zoomModal.style.display = 'flex';
+        zoomSlider.value = 1;
+        zoomedImage.style.transform = 'scale(1)';
+      });
       messageContent.appendChild(image);
     } else {
       const messageText = data.message;
@@ -265,6 +286,12 @@ function createMessageElement(data) {
         img.src = messageText;
         img.style.maxWidth = '300px';
         img.style.maxHeight = '300px';
+        img.addEventListener('click', () => {
+          zoomedImage.src = img.src;
+          zoomModal.style.display = 'flex';
+          zoomSlider.value = 1;
+          zoomedImage.style.transform = 'scale(1)';
+        });
         messageContent.appendChild(img);
       } else {
         messageContent.textContent = messageText;
@@ -276,9 +303,7 @@ function createMessageElement(data) {
     
     item.appendChild(messageContainer);
 
-    if (data.username === username) {
-      setupMessageButtons(item, data);
-    }
+    setupMessageButtons(item, data);
     
   }
   return item;
@@ -287,7 +312,7 @@ function createMessageElement(data) {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   if (input.value && username) {
-    socket.emit('chat message', { username, message: input.value, replyTo });
+    socket.emit('chat message', { message: input.value, replyTo });
     input.value = '';
     input.placeholder = 'Type a message...';
     replyTo = null;
@@ -338,7 +363,7 @@ async function editMessage(id, itemElement) {
     const res = await fetch(`/messages/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, newMessage }),
+      body: JSON.stringify({ newMessage }),
     });
 
     if (res.ok) {
@@ -359,7 +384,6 @@ async function deleteMessage(id, itemElement) {
     const res = await fetch(`/messages/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username }),
     });
 
     if (res.ok) {
@@ -373,9 +397,10 @@ async function deleteMessage(id, itemElement) {
 }
 
 function replyToMessage(id, item) {
+  const username = item.querySelector('.username').textContent;
   const messageText = item.querySelector('.message-content').textContent;
-  replyTo = { id, text: messageText };
-  input.placeholder = `Replying to: ${messageText}`;
+  replyTo = { id, text: messageText, username: username };
+  input.placeholder = `Replying to ${username} : ${messageText}`;
   input.focus();
 }
 
@@ -425,3 +450,55 @@ messages.addEventListener('scroll', async () => {
     }
   }
 });
+
+closeZoom.addEventListener('click', () => {
+  zoomModal.style.display = 'none';
+});
+
+zoomModal.addEventListener('click', (e) => {
+  if (e.target === zoomModal) {
+    zoomModal.style.display = 'none';
+  }
+});
+
+zoomSlider.addEventListener('input', (e) => {
+  zoomedImage.style.transform = `scale(${e.target.value})`;
+});
+
+tenorButton.addEventListener('click', () => {
+  tenorModal.style.display = 'block';
+});
+
+closeTenorModal.addEventListener('click', () => {
+  tenorModal.style.display = 'none';
+});
+
+tenorSearch.addEventListener('keyup', (e) => {
+  if (e.key === 'Enter') {
+    searchTenor(e.target.value);
+  }
+});
+
+async function searchTenor(query) {
+  tenorResults.innerHTML = 'Searching...';
+  try {
+    const response = await fetch(`/api/tenor-search?q=${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      throw new Error('Failed to search Tenor GIFs');
+    }
+    const data = await response.json();
+    tenorResults.innerHTML = '';
+    data.results.forEach(gif => {
+      const img = document.createElement('img');
+      img.src = gif.media_formats.gif.url;
+      img.addEventListener('click', () => {
+        socket.emit('chat message', { username, postid: gif.id, type: 'tenor' });
+        tenorModal.style.display = 'none';
+      });
+      tenorResults.appendChild(img);
+    });
+  } catch (error) {
+    console.error('Error searching Tenor GIFs:', error);
+    tenorResults.innerHTML = 'Failed to load GIFs.';
+  }
+}

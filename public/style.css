@@ -361,6 +361,7 @@ button:hover {
   font-size: 28px;
   font-weight: bold;
   cursor: pointer;
+  transform: translateY(-10%);
 }
 
 .close-modal:hover {
@@ -450,4 +451,95 @@ button:hover {
 .input-wrapper button img {
   width: 20px;
   height: 20px;
+}
+
+/* Zoom Modal Styles */
+.zoom-modal {
+  display: none;
+  position: fixed;
+  z-index: 1001;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  justify-content: center;
+  align-items: center;
+}
+
+.zoom-modal-content {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transform-origin: center center;
+}
+
+.close-zoom {
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.zoom-slider {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  max-width: 300px;
+  cursor: pointer;
+}
+
+/* Tenor Modal Styles */
+.tenor-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+#tenor-search {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #6200ea;
+  border-radius: 5px;
+  background-color: #333;
+  color: #fff;
+}
+
+#tenor-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  height: 300px;
+  overflow-y: auto;
+}
+
+#tenor-results img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.close-tenor-modal {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-tenor-modal:hover {
+  color: #e0e0e0;
 }

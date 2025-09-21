@@ -163,11 +163,11 @@ app.get('/messages', async (req, res) => {
 
 app.put('/messages/:id', async (req, res) => {
   const { id } = req.params;
-  const { username, newMessage } = req.body;
+  const { newMessage } = req.body;
   try {
     const msg = await messagesCollection.findOne({ _id: new ObjectId(id) });
     if (!msg) return res.status(404).send('Message not found');
-    if (msg.username !== username) return res.status(403).send('Forbidden');
+    if (msg.username !== req.user.username) return res.status(403).send('Forbidden');
     await messagesCollection.updateOne({ _id: new ObjectId(id) }, { $set: { message: newMessage } });
     const updated = { ...msg, message: newMessage };
     io.emit('message edited', updated);
@@ -191,12 +191,10 @@ function getPublicIdFromUrl(url) {
 
 app.delete('/messages/:id', async (req, res) => {
   const { id } = req.params;
-  const { username } = req.body;
-
   try {
     const msg = await messagesCollection.findOne({ _id: new ObjectId(id) });
     if (!msg) return res.status(404).send('Message not found');
-    if (msg.username !== username) return res.status(403).send('Forbidden');
+    if (msg.username !== req.user.username) return res.status(403).send('Forbidden');
 
     if (msg.imageUrl) {
       const publicId = getPublicIdFromUrl(msg.imageUrl);
@@ -216,6 +214,32 @@ app.delete('/messages/:id', async (req, res) => {
   }
 });
 
+app.get('/api/tenor-search', async (req, res) => {
+  const { q } = req.query;
+  if (!q) {
+    return res.status(400).json({ error: 'Search query is required' });
+  }
+
+  const apiKey = process.env.TENOR_API;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Tenor API key is not configured on the server' });
+  }
+
+  const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${apiKey}&limit=12`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Tenor API request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching from Tenor API:', error);
+    res.status(500).json({ error: 'Failed to fetch from Tenor API' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/home.html')));
 app.get('/app', (req, res) => {
@@ -223,7 +247,7 @@ app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/app.html'));
 });
 
-const onlineUsers = new Set();
+const onlineUsers = new Map();
 
 const wrap = (mw) => (socket, next) => mw(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
@@ -238,8 +262,9 @@ io.on('connection', async (socket) => {
   socket.channel = 'general';
   socket.join('general');
 
-  onlineUsers.add(username);
-  io.emit('online users', Array.from(onlineUsers));
+  const count = (onlineUsers.get(username) || 0) + 1;
+  onlineUsers.set(username, count);
+  io.emit('online users', Array.from(onlineUsers.keys()));
 
   const history = await messagesCollection.find({ channel: 'general' }).sort({ timestamp: -1 }).limit(50).toArray();
   socket.emit('chat history', history.reverse());
@@ -258,6 +283,7 @@ io.on('connection', async (socket) => {
       username,
       message: data.message,
       imageUrl: data.imageUrl,
+      postid: data.postid,
       type: data.type || 'chat',
       timestamp: new Date(),
       replyTo: data.replyTo,
@@ -268,10 +294,13 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('disconnect', () => {
-    setTimeout(() => {
+    const count = onlineUsers.get(username) - 1;
+    if (count > 0) {
+      onlineUsers.set(username, count);
+    } else {
       onlineUsers.delete(username);
-      io.emit('online users', Array.from(onlineUsers));
-    }, 10000);
+    }
+    io.emit('online users', Array.from(onlineUsers.keys()));
   });
 });
 
