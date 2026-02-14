@@ -26,10 +26,19 @@
       </div>
       <ul id="messages"></ul>
       <form id="form">
+        <div id="reply-preview" style="display:none; align-items:center; gap:8px; padding:6px; background:rgba(27,27,27,0.95); border-radius:6px;">
+          <span id="reply-text" style="font-size:0.85em; color:#cfcfcf; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+          <button type="button" id="cancel-reply-btn" title="Cancel reply" style="margin-left:auto; background:transparent; border:none; color:#bb86fc; cursor:pointer; font-weight:600;">Cancel</button>
+        </div>
         <input id="input" autocomplete="off" placeholder="Type a message..." />
-        <button><img class="img-center" src="assets/send.png" height="25" width="25"></button>
-        <button type="button" id="tenor-button" title="Search GIFs">GIF</button>
-        <button type="button" class="upload-button" title="Upload Image"><img class="img-center" src="assets/camera.png" height="25" width="25"></button>
+        <button><img class="img-center" id="send-button" src="assets/send.png" height="25" width="25"></button>
+        <div class="more-actions">
+          <button type="button" class="plus-btn">+</button>
+          <div class="more-actions-buttons">
+              <button type="button" title="Search GIFs"><img src="assets/gif.png" id="tenor-button" height="30" width="30"></button>
+              <button type="button" class="upload-button" title="Upload Image"><img class="img-center" src="assets/camera.png" height="25" width="25"></button>
+          </div>
+        </div>
       </form>
     </div>
     <div id="online-users" style="width: 200px; border-left: 1px solid #ccc; padding-left: 10px;">

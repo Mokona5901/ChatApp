@@ -19,6 +19,12 @@ const tenorButton = document.getElementById('tenor-button');
 const closeTenorModal = document.querySelector('.close-tenor-modal');
 const tenorSearch = document.getElementById('tenor-search');
 const tenorResults = document.getElementById('tenor-results');
+const moreActions = document.querySelector('.more-actions');
+const plusButton = document.querySelector('.plus-btn');
+
+const replyPreview = document.getElementById('reply-preview');
+const replyTextEl = document.getElementById('reply-text');
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
 
 let username = localStorage.getItem('username');
 let imageBase64 = null;
@@ -84,7 +90,7 @@ imageUploadForm.addEventListener('submit', async (e) => {
       const data = await response.json();
 
       if (data.success) {
-        socket.emit('chat message', { username, imageUrl: data.url, type: 'image' });
+        socket.emit('chat message', { imageUrl: data.url, type: 'image' });
         imageBase64 = null;
         imageFileInput.value = '';
         imageUploadModal.style.display = 'none';
@@ -101,7 +107,7 @@ imageUploadForm.addEventListener('submit', async (e) => {
 input.addEventListener('paste', (e) => {
   const pastedText = (e.clipboardData || window.clipboardData).getData('text');
   if (pastedText.match(/\.(jpeg|jpg|gif|png)$/) != null) {
-    socket.emit('chat message', { username, imageUrl: pastedText, type: 'image' });
+    socket.emit('chat message', { imageUrl: pastedText, type: 'image' });
     e.preventDefault();
   }
 });
@@ -236,11 +242,8 @@ function createMessageElement(data) {
     if (data.replyTo) {
       const replyDiv = document.createElement('div');
       replyDiv.className = 'reply-info';
-      if (data.replyTo.username) {
-        replyDiv.textContent = `Replying to ${data.replyTo.username}: ${data.replyTo.text}`;
-      } else {
-        replyDiv.textContent = `Replying to: ${data.replyTo.text}`;
-      }
+      replyDiv.textContent = `Replying to ${data.replyTo.username}: ${data.replyTo.text}`;
+
       messageContainer.appendChild(replyDiv);
     }
     
@@ -311,11 +314,13 @@ function createMessageElement(data) {
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (input.value && username) {
+  if (input.value) {
     socket.emit('chat message', { message: input.value, replyTo });
     input.value = '';
     input.placeholder = 'Type a message...';
     replyTo = null;
+    // hide preview after sending
+    if (replyPreview) replyPreview.style.display = 'none';
     input.focus();
   } else {
     alert('Please enter a message');
@@ -400,8 +405,21 @@ function replyToMessage(id, item) {
   const username = item.querySelector('.username').textContent;
   const messageText = item.querySelector('.message-content').textContent;
   replyTo = { id, text: messageText, username: username };
-  input.placeholder = `Replying to ${username} : ${messageText}`;
+  // show inline preview (do not change input placeholder)
+  if (replyPreview && replyTextEl) {
+    replyTextEl.textContent = `Replying to ${username}: ${messageText}`;
+    replyPreview.style.display = 'flex';
+  }
   input.focus();
+}
+
+if (cancelReplyBtn) {
+  cancelReplyBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    replyTo = null;
+    if (replyPreview) replyPreview.style.display = 'none';
+    input.focus();
+  });
 }
 
 function scrollToBottom() {
@@ -492,7 +510,7 @@ async function searchTenor(query) {
       const img = document.createElement('img');
       img.src = gif.media_formats.gif.url;
       img.addEventListener('click', () => {
-        socket.emit('chat message', { username, postid: gif.id, type: 'tenor' });
+        socket.emit('chat message', { postid: gif.id, type: 'tenor' });
         tenorModal.style.display = 'none';
       });
       tenorResults.appendChild(img);
@@ -502,3 +520,7 @@ async function searchTenor(query) {
     tenorResults.innerHTML = 'Failed to load GIFs.';
   }
 }
+
+plusButton.addEventListener('click', () => {
+  moreActions.classList.toggle('active');
+});
