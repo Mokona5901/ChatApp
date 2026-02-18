@@ -14,11 +14,11 @@ const zoomModal = document.getElementById('zoomModal');
 const zoomedImage = document.getElementById('zoomedImage');
 const closeZoom = document.querySelector('.close-zoom');
 const zoomSlider = document.getElementById('zoomSlider');
-const tenorModal = document.getElementById('tenorModal');
-const tenorButton = document.getElementById('tenor-button');
-const closeTenorModal = document.querySelector('.close-tenor-modal');
-const tenorSearch = document.getElementById('tenor-search');
-const tenorResults = document.getElementById('tenor-results');
+const klipyModal = document.getElementById('klipyModal');
+const klipyButton = document.getElementById('klipy-button');
+const closeKlipyModal = document.querySelector('.close-klipy-modal');
+const klipySearch = document.getElementById('klipy-search');
+const klipyResults = document.getElementById('klipy-results');
 const moreActions = document.querySelector('.more-actions');
 const plusButton = document.querySelector('.plus-btn');
 
@@ -250,16 +250,7 @@ function createMessageElement(data) {
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
     
-    if (data.type === 'tenor') {
-      const iframe = document.createElement('iframe');
-      iframe.src = `https://tenor.com/embed/${data.postid}?autoplay=1&mute=1`;
-      iframe.width = '300';
-      iframe.height = '300';
-      iframe.frameBorder = '0';
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-      iframe.style.border = 'none';
-      messageContent.appendChild(iframe);
-    } else if (data.imageUrl) {
+    if (data.imageUrl) {
       const image = document.createElement('img');
       image.src = data.imageUrl;
       image.style.maxWidth = '300px';
@@ -272,32 +263,65 @@ function createMessageElement(data) {
       });
       messageContent.appendChild(image);
     } else {
-      const messageText = data.message;
-      const tenorMatch = messageText.match(/tenor\.com\/view\/.*-(\d+)/);
-      if (tenorMatch) {
-        const postid = tenorMatch[1];
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://tenor.com/embed/${postid}?autoplay=1&mute=1`;
-        iframe.width = '300';
-        iframe.height = '300';
-        iframe.frameBorder = '0';
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        iframe.style.border = 'none';
-        messageContent.appendChild(iframe);
-      } else if (messageText.match(/^https?:\/\/.*\.gif$/i)) {
-        const img = document.createElement('img');
-        img.src = messageText;
-        img.style.maxWidth = '300px';
-        img.style.maxHeight = '300px';
-        img.addEventListener('click', () => {
-          zoomedImage.src = img.src;
-          zoomModal.style.display = 'flex';
-          zoomSlider.value = 1;
-          zoomedImage.style.transform = 'scale(1)';
-        });
-        messageContent.appendChild(img);
-      } else {
-        messageContent.textContent = messageText;
+      const messageText = data.message || '';
+      if (messageText) {
+        const klipyMatch = messageText.match(/klipy\.com\/gifs\/.*-(\d+)/);
+        const tenorMatch = messageText.match(/tenor\.com\/view\/.*-(\d+)/);
+
+        if (klipyMatch) {
+          const a = document.createElement('a');
+          a.href = messageText;
+          a.textContent = messageText;
+          a.target = '_blank';
+          messageContent.appendChild(a);
+
+        } else if (tenorMatch) {
+          const postid = tenorMatch[1];
+          const iframe = document.createElement('iframe');
+          iframe.src = `https://tenor.com/embed/${postid}?autoplay=1&mute=1`;
+          iframe.width = '300';
+          iframe.height = '300';
+          iframe.frameBorder = '0';
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+          iframe.style.border = 'none';
+          messageContent.appendChild(iframe);
+
+        } else if (messageText.match(/^https?:\/\/.*\.gif$/i)) {
+          const img = document.createElement('img');
+          img.src = messageText;
+          img.style.maxWidth = '300px';
+          img.style.maxHeight = '300px';
+          img.addEventListener('click', () => {
+            zoomedImage.src = img.src;
+            zoomModal.style.display = 'flex';
+            zoomSlider.value = 1;
+            zoomedImage.style.transform = 'scale(1)';
+          });
+          messageContent.appendChild(img);
+
+        } else {
+          messageContent.textContent = messageText;
+        }
+      } else if (data.type === 'klipy') {
+        if (data.imageUrl) {
+          const img = document.createElement('img');
+          img.src = data.imageUrl;
+          img.style.maxWidth = '300px';
+          img.style.maxHeight = '300px';
+          img.addEventListener('click', () => {
+            zoomedImage.src = img.src;
+            zoomModal.style.display = 'flex';
+            zoomSlider.value = 1;
+            zoomedImage.style.transform = 'scale(1)';
+          });
+          messageContent.appendChild(img);
+        } else if (data.postid) {
+          const a = document.createElement('a');
+          a.href = `https://klipy.com/gifs/${data.postid}`;
+          a.textContent = `https://klipy.com/gifs/${data.postid}`;
+          a.target = '_blank';
+          messageContent.appendChild(a);
+        }
       }
     }
     
@@ -483,41 +507,42 @@ zoomSlider.addEventListener('input', (e) => {
   zoomedImage.style.transform = `scale(${e.target.value})`;
 });
 
-tenorButton.addEventListener('click', () => {
-  tenorModal.style.display = 'block';
+klipyButton.addEventListener('click', () => {
+  klipyModal.style.display = 'block';
 });
 
-closeTenorModal.addEventListener('click', () => {
-  tenorModal.style.display = 'none';
+closeKlipyModal.addEventListener('click', () => {
+  klipyModal.style.display = 'none';
 });
 
-tenorSearch.addEventListener('keyup', (e) => {
+klipySearch.addEventListener('keyup', (e) => {
   if (e.key === 'Enter') {
-    searchTenor(e.target.value);
+    searchKlipy(e.target.value);
   }
 });
 
-async function searchTenor(query) {
-  tenorResults.innerHTML = 'Searching...';
+async function searchKlipy(query) {
+  klipyResults.innerHTML = 'Searching...';
   try {
-    const response = await fetch(`/api/tenor-search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`/api/klipy-search?q=${encodeURIComponent(query)}`);
     if (!response.ok) {
-      throw new Error('Failed to search Tenor GIFs');
+      throw new Error('Failed to search Klipy GIFs');
     }
     const data = await response.json();
-    tenorResults.innerHTML = '';
+    klipyResults.innerHTML = '';
     data.results.forEach(gif => {
       const img = document.createElement('img');
       img.src = gif.media_formats.gif.url;
       img.addEventListener('click', () => {
-        socket.emit('chat message', { postid: gif.id, type: 'tenor' });
-        tenorModal.style.display = 'none';
+        // send the actual gif URL so it renders as an image in the chat
+        socket.emit('chat message', { imageUrl: gif.media_formats.gif.url, type: 'image' });
+        klipyModal.style.display = 'none';
       });
-      tenorResults.appendChild(img);
+      klipyResults.appendChild(img);
     });
   } catch (error) {
-    console.error('Error searching Tenor GIFs:', error);
-    tenorResults.innerHTML = 'Failed to load GIFs.';
+    console.error('Error searching Klipy GIFs:', error);
+    klipyResults.innerHTML = 'Failed to load GIFs.';
   }
 }
 

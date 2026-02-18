@@ -214,29 +214,29 @@ app.delete('/messages/:id', async (req, res) => {
   }
 });
 
-app.get('/api/tenor-search', async (req, res) => {
+app.get('/api/klipy-search', async (req, res) => {
   const { q } = req.query;
   if (!q) {
     return res.status(400).json({ error: 'Search query is required' });
   }
 
-  const apiKey = process.env.TENOR_API;
+  const apiKey = process.env.KLIPY_API;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Tenor API key is not configured on the server' });
+    return res.status(500).json({ error: 'Klipy API key is not configured on the server' });
   }
 
-  const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${apiKey}&limit=12`;
+  const url = `https://api.klipy.com/v2/search?q=${encodeURIComponent(q)}&key=${apiKey}&limit=12`;
 
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Tenor API request failed with status ${response.status}`);
+      throw new Error(`Klipy API request failed with status ${response.status}`);
     }
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Error fetching from Tenor API:', error);
-    res.status(500).json({ error: 'Failed to fetch from Tenor API' });
+    console.error('Error fetching from Klipy API:', error);
+    res.status(500).json({ error: 'Failed to fetch from Klipy API' });
   }
 });
 

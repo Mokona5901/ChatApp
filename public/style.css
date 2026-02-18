@@ -76,10 +76,13 @@ h1 {
   flex-grow: 1;
 }
 
+/* make online users a fixed sidebar but smaller and not force layout overflow */
 #online-users {
-  width: 600px;
+  flex: 0 0 200px;
+  width: 200px;
   border-left: 1px;
   padding-left: 10px;
+  box-sizing: border-box;
 }
 
 .logo-img {
@@ -180,6 +183,30 @@ h1 {
 .message-content {
   color: #e0e0e0;
   line-height: 1.4;
+}
+
+/* ensure media and embeds stay within the message column */
+.message-content img,
+.message-content iframe {
+  width: 300px;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+  max-width: none;
+}
+
+@media (max-width: 768px) {
+  .message-content img,
+  .message-content iframe {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+/* allow the chat main column to shrink inside the flex container */
+.chat-main {
+  min-width: 0;
 }
 
 .message-buttons {
@@ -406,6 +433,7 @@ button:hover {
   cursor: pointer;
   margin-left: 10px;
   transition: background-color 0.3s;
+  transform: translateX(30%);
 }
 
 .upload-button:hover {
@@ -467,9 +495,9 @@ button:hover {
   bottom: 56px;
   z-index: 10003;
   border-radius: 8px;
-  max-width: 400px;
-  width: calc(100% - 48px);
-  transform: translateX(-70%) translateY(-10%);
+  max-width: 600px;
+  width: calc(100%);
+  transform: translateX(-50%) translateY(-10%);
   background: linear-gradient(180deg, #6200ea, #1f1f1f);
   border: 1px solid #6200ea;
 }
@@ -563,7 +591,11 @@ button:hover {
   cursor: pointer;
 }
 
-.tenor-modal {
+.gif-button {
+  transform: translateX(10%);
+}
+
+.klipy-modal {
   display: none;
   position: fixed;
   z-index: 10002;
@@ -574,7 +606,7 @@ button:hover {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-#tenor-search {
+#klipy-search {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
@@ -584,7 +616,7 @@ button:hover {
   color: #fff;
 }
 
-#tenor-results {
+#klipy-results {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
@@ -592,7 +624,7 @@ button:hover {
   overflow-y: auto;
 }
 
-#tenor-results img {
+#klipy-results img {
   width: 100%;
   height: 120px;
   object-fit: cover;
@@ -600,7 +632,7 @@ button:hover {
   border-radius: 5px;
 }
 
-.close-tenor-modal {
+.close-klipy-modal {
   color: #aaa;
   float: right;
   font-size: 28px;
@@ -608,7 +640,7 @@ button:hover {
   cursor: pointer;
 }
 
-.close-tenor-modal:hover {
+.close-klipy-modal:hover {
   color: #e0e0e0;
 }
 
@@ -631,7 +663,21 @@ button:hover {
   transform: translateX(15%);
 }
 
+.send-button{
+  gap : 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 @media (max-width: 768px) {
+
+  .send-button{
+    gap : 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    transform: translateX(-50%);
+  }
+
   .plus-btn {
     display: block;
   }
@@ -673,11 +719,4 @@ button:hover {
   .more-actions.active .plus-btn {
     background-color: #7f39fb;
   }
-}
-
-.send-button{
-  gap : 8px;
-  padding-left: 8px;
-  padding-right: 8px;
-  transform: translateX(-50%);
 }
